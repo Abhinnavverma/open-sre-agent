@@ -14,7 +14,6 @@ load_dotenv(override=False)
 from langsmith import traceable  # noqa: E402
 
 from app.agent.runners import run_investigation  # noqa: E402
-from app.agent.tools.tool_actions.investigation_registry import get_available_actions  # noqa: E402
 from app.cli import parse_args, write_json  # noqa: E402
 
 
@@ -96,6 +95,25 @@ def _extract_alert_fields_for_dry_run(raw_alert: dict[str, Any]) -> tuple[str, s
 
     return str(alert_name), str(pipeline_name), str(severity)
 
+def _infer_potential_tool_groups(raw_alert: dict[str,Any]) -> list[str]:
+    """
+    Lightweight dry-run tool preview groups inferred from payload hints only.
+    """
+    hint_text = json.dumps(raw_alert,sort_keys=True).lower()
+    potential_groups: list[str] = []
+    def add(group: str) -> None:
+        if group not in potential_groups:
+            potential_groups.append(group)
+    if any(x in hint_text for x in ["trace_id","pipeline_name","run_name"]):
+        add("tracer")
+    if any(x in hint_text for x in ["cloudwatch_log_group","log_group","lambda_log_group","function_name"]):
+        add("cloudwatch_lambda")
+    if any(x in hint_text for x in ["commonlabels","alerts","externalurl","generatorurl","grafana"]):
+        add("grafana")
+    if any(x in hint_text for x in ["kube_namespace","pod_name","deployment","eks_cluster","crashloopbackoff","oomkilled"]):
+        add("eks_kubernetes")
+    add("sre_guidance")
+    return potential_groups
 
 def _build_dry_run_preview(
     alert_name: str,
@@ -118,7 +136,7 @@ def _build_dry_run_preview(
     candidate_integrations = raw_alert.get("integrations", [])
     if not isinstance(candidate_integrations, list):
         candidate_integrations = []
-    potential_tools = [action.name for action in get_available_actions()]
+    potential_tool_groups = _infer_potential_tool_groups(raw_alert)
 
     return {
         "mode": "dry-run",
@@ -133,7 +151,7 @@ def _build_dry_run_preview(
             "integration_count": len(candidate_integrations),
         },
         "planned_steps": planned_steps,
-        "potential_tools": potential_tools,
+        "potential_tool_groups": potential_tool_groups,
         "note": "No integrations, LLM, tool execution, or external API calls were made.",
     }
 
