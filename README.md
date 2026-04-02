@@ -99,8 +99,7 @@ We do that by:
 - running [scored synthetic RCA suites](tests/synthetic/rds_postgres/README.md) for RDS PostgreSQL that check root-cause accuracy, required evidence, and adversarial red herrings
 - running [Kubernetes end-to-end tests](tests/e2e/kubernetes/) and the [`test-thorough` CI matrix](.github/workflows/ci.yml) across cloud-backed scenarios like CloudWatch, Lambda, ECS Fargate, and Flink
 
-Our goal is to scale this into thousands of realistic infrastructure failure scenarios and become the benchmark and training ground for AI SRE. You can contribute by adding new failure modes to existing cloud assets or building new suites for novel assets. Right now, our highest-priority areas are database asset models and new Kubernetes failure modes.
-
+Our goal is to scale this into thousands of realistic infrastructure failure scenarios and become the benchmark and training ground for AI SRE. 
 
 ---
 
