@@ -114,6 +114,7 @@ def test_capture_posts_expected_payload(monkeypatch, tmp_path: Path) -> None:
     assert captured["timeout"] == provider._SEND_TIMEOUT
 
     payload = cast(dict[str, object], captured["json"])
+    assert payload["api_key"] == provider._POSTHOG_API_KEY
     assert payload["event"] == Event.COMMAND_COMPLETED.value
 
     properties = cast(dict[str, object], payload["properties"])
@@ -175,6 +176,6 @@ def test_debug_mode_logs_payload_without_network_send(monkeypatch, tmp_path: Pat
     assert "[telemetry]" in output
     assert Event.COMMAND_COMPLETED.value in output
     assert provider._POSTHOG_API_KEY not in output
+    assert "api_key" not in output
     assert "super-secret-token" not in output
-    assert '"api_key": "[REDACTED]"' in output
     assert '"access_token": "[REDACTED]"' in output

@@ -118,12 +118,11 @@ def _base_properties() -> Properties:
     }
 
 
-def _build_payload(event: Event, properties: Properties | None = None) -> dict[str, object] | None:
+def _build_event_data(event: Event, properties: Properties | None = None) -> dict[str, object] | None:
     if _is_opted_out():
         return None
 
     return {
-        "api_key": _POSTHOG_API_KEY,
         "event": event.value,
         "properties": {
             "distinct_id": _get_or_create_anonymous_id(),
@@ -148,20 +147,21 @@ def _redact_sensitive_values(value: object) -> object:
     return value
 
 
-def _debug_log(payload: dict[str, object]) -> None:
-    safe_payload = _redact_sensitive_values(payload)
-    print(f"{_DEBUG_PREFIX} {json.dumps(safe_payload, sort_keys=True)}", file=sys.stderr)
+def _debug_log(event_data: dict[str, object]) -> None:
+    safe = _redact_sensitive_values(event_data)
+    print(f"{_DEBUG_PREFIX} {json.dumps(safe, sort_keys=True)}", file=sys.stderr)
 
 
 def capture(event: Event, properties: Properties | None = None) -> None:
-    payload = _build_payload(event, properties)
-    if payload is None:
+    event_data = _build_event_data(event, properties)
+    if event_data is None:
         return
 
     if _is_debug_enabled():
-        _debug_log(payload)
+        _debug_log(event_data)
         return
 
+    payload = {"api_key": _POSTHOG_API_KEY, **event_data}
     with contextlib.suppress(Exception):
         httpx.post(f"{_POSTHOG_HOST}/capture/", json=payload, timeout=_SEND_TIMEOUT).raise_for_status()
 
