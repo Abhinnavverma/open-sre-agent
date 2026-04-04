@@ -1,7 +1,7 @@
 -include .env
 export
 
-.PHONY: install onboard test test-full demo alert-template investigate-alert verify-integrations check-docker check-langgraph check-langsmith-api-key grafana-local-up grafana-local-down grafana-local-seed langgraph-build langgraph-deploy clean lint format deploy deploy-lambda deploy-prefect deploy-flink destroy destroy-lambda destroy-prefect destroy-flink prefect-local-test simulate-k8s-alert test-k8s-local test-k8s test-k8s-datadog deploy-dd-monitors cleanup-dd-monitors deploy-eks destroy-eks test-k8s-eks datadog-demo crashloop-demo regen-trigger-config test-rca test-rca-grafana test-synthetic test-rds-synthetic test-cli-smoke
+.PHONY: install onboard benchmark test test-full demo alert-template investigate-alert verify-integrations check-docker check-langgraph check-langsmith-api-key grafana-local-up grafana-local-down grafana-local-seed langgraph-build langgraph-deploy clean lint format deploy deploy-lambda deploy-prefect deploy-flink destroy destroy-lambda destroy-prefect destroy-flink prefect-local-test simulate-k8s-alert test-k8s-local test-k8s test-k8s-datadog deploy-dd-monitors cleanup-dd-monitors deploy-eks destroy-eks test-k8s-eks datadog-demo crashloop-demo regen-trigger-config test-rca test-rca-grafana test-synthetic test-rds-synthetic test-cli-smoke
 
 ifneq ($(wildcard .venv/bin/python),)
 PYTHON = .venv/bin/python
@@ -30,6 +30,10 @@ onboard:
 # Run Prefect ECS demo (default demo) - shows Investigation Trace in RCA
 demo:
 	$(PYTHON) -m tests.e2e.upstream_prefect_ecs_fargate.test_agent_e2e
+
+# Run Benchmarking Script based on Synthetic Scenarios
+benchmark:
+	$(PYTHON) -m tests.benchmarks.toolcall_model_benchmark.benchmark_generator
 
 alert-template:
 	opensre investigate --print-template $(or $(TEMPLATE),generic)
@@ -333,3 +337,4 @@ help:
 	@echo "  make format          - Format code with ruff"
 	@echo "  make typecheck       - Type check with mypy"
 	@echo "  make check           - Run all checks"
+	@echo "  make benchmark		  - Run benchmark report generation"
