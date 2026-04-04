@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import logging
 from dataclasses import dataclass
+from typing import Literal
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -20,13 +22,15 @@ FIXED_SCENARIO_IDS: tuple[str, ...] = (
     "003-storage-full",
 )
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass(frozen=True)
 class CaseMetrics:
     """Per-case benchmark measurements for one scenario run."""
 
     scenario_id: str
-    run_status: str
+    run_status: Literal["ok","error"]
     duration_seconds: float
     input_tokens: int
     output_tokens: int
@@ -52,6 +56,7 @@ class SummaryMetrics:
 
 
 def _resolve_models() -> tuple[str, str]:
+    """Resolve reasoning/tool model IDs from active provider environment settings."""
     settings = LLMSettings.from_env()
     provider = settings.provider
     reasoning_attr = f"{provider}_reasoning_model"
@@ -60,7 +65,8 @@ def _resolve_models() -> tuple[str, str]:
     tool_model = getattr(settings, tool_attr, None)
     if reasoning_model is None or tool_model is None:
         raise ValueError(
-            f"Provider {provider!r} is missing attributes {reasoning_attr!r} or {tool_attr!r} on LLMSettings."
+            f"Provider {provider!r} is missing attributes {reasoning_attr!r} "
+            f"or {tool_attr!r} on LLMSettings."
         )
     return str(reasoning_model), str(tool_model)
 
@@ -125,7 +131,8 @@ def render_markdown(cases: list[CaseMetrics], summary: SummaryMetrics) -> str:
         err = _sanitize_error_for_markdown(c.error) if c.error else ""
         lines.append(
             f"| {c.scenario_id} | {c.run_status} | {c.duration_seconds:.2f} | "
-            f"{c.input_tokens} | {c.output_tokens} | {c.total_tokens} | {c.estimated_cost_usd:.6f} | {err} |"
+            f"{c.input_tokens} | {c.output_tokens} | {c.total_tokens} | "
+            f"{c.estimated_cost_usd:.6f} | {err} |"
         )
 
     lines.append("")
@@ -156,7 +163,7 @@ def run_benchmark(
     tool_usd_per_mtok: float = 1.0,
 ) -> tuple[list[CaseMetrics], SummaryMetrics]:
     """Execute benchmark cases and collect duration, token, and cost metrics."""
-    selected = scenario_ids or list(FIXED_SCENARIO_IDS)
+    selected = scenario_ids if scenario_ids is not None else list(FIXED_SCENARIO_IDS)
     reasoning_model, tool_model = _resolve_models()
 
     cases: list[CaseMetrics] = []
@@ -187,7 +194,7 @@ def run_benchmark(
                 )
             )
         except Exception as exc:
-            print(f"[benchmark] FAILED {sid}: {exc}", flush=True)
+            logger.exception("[benchmark] failed scenario %s", sid)
             cases.append(
                 CaseMetrics(
                     scenario_id=sid,
@@ -226,6 +233,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     """Load environment, run benchmark, and write markdown report."""
     load_dotenv(override=False)
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     args = parse_args(argv)
     selected = list(args.scenario) if args.scenario else list(FIXED_SCENARIO_IDS)
@@ -240,8 +248,9 @@ def main(argv: list[str] | None = None) -> int:
     md_out.parent.mkdir(parents=True, exist_ok=True)
     md_out.write_text(render_markdown(cases, summary), encoding="utf-8")
 
-    print(f"Wrote markdown report: {md_out}")
-    return 0
+    logger.info("Wrote markdown report: %s", md_out)
+    
+    return 0 if summary.error_count == 0 else 1
 
 
 if __name__ == "__main__":
