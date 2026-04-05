@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import argparse
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Literal
 from pathlib import Path
+from typing import Literal
 
 from dotenv import load_dotenv
 
@@ -16,7 +16,6 @@ from tests.benchmarks.toolcall_model_benchmark.pipeline_benchmark import (
     get_fixture_by_id,
     run_langgraph_investigation_bench,
 )
-
 from tests.benchmarks.toolcall_model_benchmark.pricing import (
     DEFAULT_REASONING_USD_PER_MTOK,
     DEFAULT_TOOL_USD_PER_MTOK,
