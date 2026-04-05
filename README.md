@@ -340,6 +340,13 @@ Thanks goes to these amazing people:
             <sub><b>Yashkapure06</b></sub>
         </a>
     </td>
+            <td align="center">
+        <a href="https://github.com/Davda-James">
+            <img src="https://avatars.githubusercontent.com/u/151067328?v=4" width="100;" alt="Davda-James"/>
+            <br />
+            <sub><b>Davda-James</b></sub>
+        </a>
+    </td>
 		</tr>
 	</tbody>
 </table>
